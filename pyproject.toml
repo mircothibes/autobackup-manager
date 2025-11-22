@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=69.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autobackup-manager"
+version = "0.1.0"
+description = "Desktop app to manage scheduled backups with Tkinter, PostgreSQL and Docker."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+authors = [
+  { name = "Marcos Vinicius Thibes Kemer" },
+]
+
+dependencies = [
+  "SQLAlchemy>=2.0",
+  "psycopg2-binary>=2.9",
+  "python-dotenv>=1.0",
+  "APScheduler>=3.10",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.5.0",
+  "black>=24.0",
+]
+
+[project.scripts]
+autobackup-manager = "autobackup.main:main"
+
+[project.urls]
+Homepage = "https://github.com/mircothibes/autobackup-manager"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+select = ["E", "F", "I", "UP", "B"]
+ignore = []
+src = ["src", "tests"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-q"
+testpaths = ["tests"]
+
