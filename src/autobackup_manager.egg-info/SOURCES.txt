@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+src/autobackup/__init__.py
+src/autobackup_manager.egg-info/PKG-INFO
+src/autobackup_manager.egg-info/SOURCES.txt
+src/autobackup_manager.egg-info/dependency_links.txt
+src/autobackup_manager.egg-info/entry_points.txt
+src/autobackup_manager.egg-info/requires.txt
+src/autobackup_manager.egg-info/top_level.txt

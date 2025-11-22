@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: autobackup-manager
+Version: 0.1.0
+Summary: Desktop app to manage scheduled backups with Tkinter, PostgreSQL and Docker.
+Author: Marcos Vinicius Thibes Kemer
+License: Proprietary
+Project-URL: Homepage, https://github.com/mircothibes/autobackup-manager
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: SQLAlchemy>=2.0
+Requires-Dist: psycopg2-binary>=2.9
+Requires-Dist: python-dotenv>=1.0
+Requires-Dist: APScheduler>=3.10
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: ruff>=0.5.0; extra == "dev"
+Requires-Dist: black>=24.0; extra == "dev"
