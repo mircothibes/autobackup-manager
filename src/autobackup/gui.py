@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 
 from autobackup.scheduler import BackupScheduler
 from autobackup.db import SessionLocal
@@ -34,19 +34,173 @@ class AutoBackupApp(tk.Tk):
         )
         title_label.pack(side="left")
 
+        buttons_frame = ttk.Frame(header_frame)
+        buttons_frame.pack(side="right")
+
+        add_button = ttk.Button(
+            buttons_frame,
+            text="Add Job",
+            command=self._open_add_job_window,
+        )
+        add_button.pack(side="left", padx=(0, 5))
+
         run_button = ttk.Button(
             header_frame,
             text="Run Now",
             command=self._run_selected_job,
         )
-        run_button.pack(side="right", padx=(5, 0))
+        run_button.pack(side="left", padx=(5, 0))
 
         refresh_button = ttk.Button(
             header_frame,
             text="Refresh",
             command=self._load_jobs,
         )
-        refresh_button.pack(side="right")
+        refresh_button.pack(side="left")
+
+    def _browse_directory(self, target_var: tk.StringVar) -> None:
+        directory = filedialog.askdirectory()
+        if directory:
+            target_var.set(directory)
+
+
+    def _open_add_job_window(self) -> None:
+        window = tk.Toplevel(self)
+        window.title("Add Backup Job")
+        window.geometry("500x300")
+        window.grab_set()
+
+        name_var = tk.StringVar()
+        source_var = tk.StringVar()
+        destination_var = tk.StringVar()
+        schedule_var = tk.StringVar(value="manual")
+        interval_var = tk.StringVar()
+
+        form_frame = ttk.Frame(window)
+        form_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Name
+        ttk.Label(form_frame, text="Name:").grid(row=0, column=0, sticky="w")
+        name_entry = ttk.Entry(form_frame, textvariable=name_var, width=40)
+        name_entry.grid(row=0, column=1, columnspan=2, sticky="we", pady=5)
+
+        # Source path
+        ttk.Label(form_frame, text="Source path:").grid(row=1, column=0, sticky="w")
+        source_entry = ttk.Entry(form_frame, textvariable=source_var, width=35)
+        source_entry.grid(row=1, column=1, sticky="we", pady=5)
+        source_button = ttk.Button(
+            form_frame,
+            text="Browse",
+            command=lambda: self._browse_directory(source_var),
+        )
+        source_button.grid(row=1, column=2, padx=5)
+
+        # Destination path
+        ttk.Label(form_frame, text="Destination path:").grid(row=2, column=0, sticky="w")
+        destination_entry = ttk.Entry(form_frame, textvariable=destination_var, width=35)
+        destination_entry.grid(row=2, column=1, sticky="we", pady=5)
+        destination_button = ttk.Button(
+            form_frame,
+            text="Browse",
+            command=lambda: self._browse_directory(destination_var),
+        )
+        destination_button.grid(row=2, column=2, padx=5)
+
+        # Schedule type
+        ttk.Label(form_frame, text="Schedule type:").grid(row=3, column=0, sticky="w")
+        schedule_combo = ttk.Combobox(
+            form_frame,
+            textvariable=schedule_var,
+            values=["manual", "interval", "daily"],
+            state="readonly",
+            width=15,
+        )
+        schedule_combo.grid(row=3, column=1, sticky="w", pady=5)
+        schedule_combo.current(0)
+
+        # Interval minutes (used when schedule_type == "interval")
+        ttk.Label(form_frame, text="Interval (minutes):").grid(row=4, column=0, sticky="w")
+        interval_entry = ttk.Entry(form_frame, textvariable=interval_var, width=10)
+        interval_entry.grid(row=4, column=1, sticky="w", pady=5)
+
+        # Buttons
+        buttons_frame = ttk.Frame(window)
+        buttons_frame.pack(fill="x", padx=10, pady=(0, 10))
+
+        def on_save() -> None:
+            name = name_var.get().strip()
+            source_path = source_var.get().strip()
+            destination_path = destination_var.get().strip()
+            schedule_type = schedule_var.get()
+            interval_minutes = None
+
+            if not name or not source_path or not destination_path:
+                messagebox.showwarning(
+                    "Missing data",
+                    "Name, source path and destination path are required.",
+                )
+                return
+
+            if schedule_type == "interval":
+                raw_interval = interval_var.get().strip()
+                if not raw_interval:
+                    messagebox.showwarning(
+                        "Missing interval",
+                        "Interval minutes are required for interval schedule.",
+                    )
+                    return
+                try:
+                    interval_minutes = int(raw_interval)
+                    if interval_minutes <= 0:
+                        raise ValueError
+                except ValueError:
+                    messagebox.showerror(
+                        "Invalid interval",
+                        "Interval must be a positive integer.",
+                    )
+                    return
+
+            db = SessionLocal()
+            try:
+                job = BackupJob(
+                    name=name,
+                    source_path=source_path,
+                    destination_path=destination_path,
+                    schedule_type=schedule_type,
+                    interval_minutes=interval_minutes,
+                    active=True,
+                )
+                db.add(job)
+                db.commit()
+                db.refresh(job)
+
+                # Reload scheduler and table
+                self.scheduler.reload()
+                self._load_jobs()
+
+                messagebox.showinfo(
+                    "Job created",
+                    f"Backup job '{job.name}' was created successfully.",
+                )
+                window.destroy()
+
+            except Exception as exc:  # noqa: BLE001
+                messagebox.showerror(
+                    "Error",
+                    f"Failed to create job:\n{exc}",
+                )
+            finally:
+                db.close()
+
+        save_button = ttk.Button(buttons_frame, text="Save", command=on_save)
+        save_button.pack(side="right", padx=(0, 5))
+
+        cancel_button = ttk.Button(buttons_frame, text="Cancel", command=window.destroy)
+        cancel_button.pack(side="right", padx=(0, 5))
+
+        # Focus name field
+        name_entry.focus()
+    
 
     def _run_selected_job(self) -> None:
         selected = self.job_tree.selection()
