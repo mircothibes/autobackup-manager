@@ -1,5 +1,5 @@
+"""
 from sqlalchemy.orm import Session
-
 from autobackup.db import Base, engine, SessionLocal
 from autobackup.models import BackupJob
 from autobackup.backup_engine import run_backup_for_job
@@ -39,4 +39,26 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+"""
+from autobackup.db import Base, engine
+from autobackup.scheduler import BackupScheduler
+from autobackup.gui import run_app
+
+
+def main() -> None:
+    # Create table
+    Base.metadata.create_all(bind=engine)
+
+    # start scheduler
+    scheduler = BackupScheduler()
+    scheduler.reload()
+
+    # start gui
+    run_app(scheduler)
+
+
+if __name__ == "__main__":
+    main()
+
+
 
