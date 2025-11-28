@@ -226,16 +226,17 @@ class AutoBackupApp(tk.Tk):
         window.grab_set()
 
         # Variables
-        name_var = tk.StringVar(value=job.name if is_edit else "")
-        src_var = tk.StringVar(value=job.source_path if is_edit else "")
-        dst_var = tk.StringVar(value=job.destination_path if is_edit else "")
+        name_var = tk.StringVar(value=str(job.name) if is_edit else "")
+        src_var = tk.StringVar(value=str(job.source_path) if is_edit else "")
+        dst_var = tk.StringVar(value=str(job.destination_path) if is_edit else "")
         schedule_var = tk.StringVar(
-            value=job.schedule_type if is_edit else "manual",
+            value=str(job.schedule_type) if is_edit else "manual",
         )
         interval_var = tk.StringVar(
-            value=str(job.interval_minutes) if is_edit and job.interval_minutes else "",
+            value=str(job.interval_minutes) 
+            if is_edit and job.interval_minutes is not None else "",
         )
-        active_var = tk.BooleanVar(value=job.active if is_edit else True)
+        active_var = tk.BooleanVar(value=bool(job.active) if is_edit else True)
 
         # Form
         form = ttk.Frame(window)
