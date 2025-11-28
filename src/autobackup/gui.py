@@ -144,6 +144,8 @@ class AutoBackupApp(tk.Tk):
         try:
             jobs = db.query(BackupJob).order_by(BackupJob.id).all()
             for job in jobs:
+                active_label = "Yes" if bool(job.active) else "No"
+
                 self.job_tree.insert(
                     "",
                     "end",
@@ -154,7 +156,7 @@ class AutoBackupApp(tk.Tk):
                         job.destination_path,
                         job.schedule_type,
                         job.interval_minutes or "",
-                        "Yes" if job.active else "No",
+                        active_label,
                     ),
                 )
         finally:
@@ -176,11 +178,19 @@ class AutoBackupApp(tk.Tk):
                 return
 
             run = run_backup_for_job(db, job)
+            status = str(getattr(run, "status", ""))
+            message = str(getattr(run, "message", "")) if getattr(run, "message", None) else ""
 
-            if run.status == "success":
-                messagebox.showinfo("Success", f"Backup created:\n{run.output_file}")
+            if status == "success":
+                messagebox.showinfo(
+                    "Success",
+                    f"Backup created:\n{getattr(run, 'output_file', '')}",
+                )
             else:
-                messagebox.showerror("Backup failed", run.message)
+                messagebox.showerror(
+                    "Backup failed",
+                    message or "Backup failed with unknown error.",
+                ) 
         finally:
             db.close()
 
