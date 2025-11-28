@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-from typing import Optional
+from typing import Optional, Any, cast
 
 from autobackup.scheduler import BackupScheduler
 from autobackup.db import SessionLocal
@@ -320,19 +320,20 @@ class AutoBackupApp(tk.Tk):
             db = SessionLocal()
             try:
                 if is_edit and job is not None:
-                    job_db = db.query(BackupJob).filter_by(id=job.id).first()
-                    if job_db is None:
+                    job_db_any: Any = db.query(BackupJob).filter_by(id=job.id).first()
+                    if job_db_any is None:
                         messagebox.showerror("Error", "Job no longer exists.")
                         return
 
-                    job_db.name = name
-                    job_db.source_path = src
-                    job_db.destination_path = dst
-                    job_db.schedule_type = schedule
-                    job_db.interval_minutes = interval_value
-                    job_db.active = active_var.get()
+                    job_db_any.name = name
+                    job_db_any.source_path = src
+                    job_db_any.destination_path = dst
+                    job_db_any.schedule_type = schedule
+                    job_db_any.interval_minutes = ( 
+                        int(interval_value) if interval_value is not None else None)
+                    job_db_any.active = bool(active_var.get())
                 else:
-                    job_db = BackupJob(
+                    job_db_any = BackupJob(
                         name=name,
                         source_path=src,
                         destination_path=dst,
@@ -340,7 +341,7 @@ class AutoBackupApp(tk.Tk):
                         interval_minutes=interval_value,
                         active=active_var.get(),
                     )
-                    db.add(job_db)
+                    db.add(job_db_any)
 
                 db.commit()
                 self.scheduler.reload()
