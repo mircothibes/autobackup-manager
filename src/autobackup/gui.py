@@ -4,7 +4,7 @@ from typing import Optional, Any, cast
 
 from autobackup.scheduler import BackupScheduler
 from autobackup.db import SessionLocal
-from autobackup.models import BackupJob
+from autobackup.models import BackupJob, BackupRun
 from autobackup.backup_engine import run_backup_for_job
 
 
@@ -49,6 +49,10 @@ class AutoBackupApp(tk.Tk):
             padx=5,
         )
         ttk.Button(btn_frame, text="Delete Job", command=self.delete_selected_job).pack(
+            side="left",
+            padx=5,
+        )
+        ttk.Button(btn_frame, text="History", command=self.open_history_window).pack(
             side="left",
             padx=5,
         )
@@ -161,6 +165,94 @@ class AutoBackupApp(tk.Tk):
                 )
         finally:
             db.close()
+
+    # ------------------------------------------------------------
+    # History Window
+    # ------------------------------------------------------------
+    def open_history_window(self) -> None:
+        job_id = self.get_selected_job_id()
+        if job_id is None:
+            return
+
+        db = SessionLocal()
+        try:
+            job = db.query(BackupJob).filter_by(id=job_id).first()
+            if job is None:
+                messagebox.showerror("Error", "Job no longer exists.")
+                return
+
+            runs = (
+                db.query(BackupRun)
+                .filter_by(job_id=job_id)
+                .order_by(BackupRun.start_time.desc())
+                .all()
+            )
+        finally:
+            db.close()
+
+        window = tk.Toplevel(self)
+        window.title(f"History - {job.name}")
+        window.geometry("800x400")
+        window.grab_set()
+
+        frame = ttk.Frame(window)
+        frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        columns = (
+            "id",
+            "start",
+            "end",
+            "status",
+            "message",
+            "output_file",
+        )
+
+        tree = ttk.Treeview(
+            frame,
+            columns=columns,
+            show="headings",
+            height=15,
+        )
+
+        tree.heading("id", text="ID")
+        tree.heading("start", text="Start time")
+        tree.heading("end", text="End time")
+        tree.heading("status", text="Status")
+        tree.heading("message", text="Message")
+        tree.heading("output_file", text="Output file")
+
+        tree.column("id", width=40, anchor="center")
+        tree.column("start", width=150, anchor="w")
+        tree.column("end", width=150, anchor="w")
+        tree.column("status", width=80, anchor="center")
+        tree.column("message", width=250, anchor="w")
+        tree.column("output_file", width=250, anchor="w")
+
+        tree.pack(fill="both", expand=True, side="left")
+
+        scrollbar = ttk.Scrollbar(
+            frame,
+            orient="vertical",
+            command=tree.yview,
+        )
+        scrollbar.pack(side="right", fill="y")
+        tree.configure(yscrollcommand=scrollbar.set)
+
+        for run in runs:
+            msg = (run.message or "")[:80]
+            tree.insert(
+                "",
+                "end",
+                values=(
+                    run.id,
+                    str(run.start_time) if run.start_time else "",
+                    str(run.end_time) if run.end_time else "",
+                    str(run.status) if run.status else "",
+                    msg,
+                    str(run.output_file) if run.output_file else "",
+                ),
+            )
+
 
     # ------------------------------------------------------------
     # Run Job
