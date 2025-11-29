@@ -237,21 +237,29 @@ class AutoBackupApp(tk.Tk):
         )
         scrollbar.pack(side="right", fill="y")
         tree.configure(yscrollcommand=scrollbar.set)
-
+        
         for run in runs:
-            msg = (run.message or "")[:80]
+            run_any: Any = run
+
+            message_text = str(getattr(run_any, "message", "") or "")[:80]
+            start_val = getattr(run_any, "start_time", None)
+            end_val = getattr(run_any, "end_time", None)
+            status_val = getattr(run_any, "status", "")
+            output_val = getattr(run_any, "output_file", "")
+
             tree.insert(
                 "",
                 "end",
                 values=(
-                    run.id,
-                    str(run.start_time) if run.start_time else "",
-                    str(run.end_time) if run.end_time else "",
-                    str(run.status) if run.status else "",
-                    msg,
-                    str(run.output_file) if run.output_file else "",
+                    run_any.id,
+                    str(start_val) if start_val is not None else "",
+                    str(end_val) if end_val is not None else "",
+                    str(status_val) if status_val else "",
+                    message_text,
+                    str(output_val) if output_val else "",
                 ),
             )
+
 
 
     # ------------------------------------------------------------
