@@ -2,6 +2,9 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from typing import Optional, Any, cast
 
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 from autobackup.scheduler import BackupScheduler
 from autobackup.db import SessionLocal
 from autobackup.models import BackupJob, BackupRun
@@ -53,6 +56,10 @@ class AutoBackupApp(tk.Tk):
             padx=5,
         )
         ttk.Button(btn_frame, text="History", command=self.open_history_window).pack(
+            side="left",
+            padx=5,
+        )
+        ttk.Button(btn_frame, text="Dashboard", command=self.open_dashboard_window).pack(
             side="left",
             padx=5,
         )
@@ -260,6 +267,120 @@ class AutoBackupApp(tk.Tk):
                 ),
             )
 
+    # ------------------------------------------------------------
+    # Open Dashboard Window
+    # ------------------------------------------------------------
+    def open_dashboard_window(self) -> None:
+        db = SessionLocal()
+        try:
+            runs = db.query(BackupRun).all()
+        finally:
+            db.close()
+
+        if not runs:
+            messagebox.showinfo(
+                "Dashboard",
+                "No backup runs available to build the dashboard yet.",
+            )
+            return
+
+        # Collect statistics
+        total_runs = len(runs)
+        success_count = 0
+        failure_count = 0
+        date_counts: dict[str, int] = {}
+        total_duration_secs = 0.0
+        duration_count = 0
+
+        for run in runs:
+            run_any: Any = run  # evita problemas de typing com SQLAlchemy
+
+            status_val = str(getattr(run_any, "status", "") or "")
+            if status_val == "success":
+                success_count += 1
+            else:
+                failure_count += 1
+
+            start_val = getattr(run_any, "start_time", None)
+            end_val = getattr(run_any, "end_time", None)
+
+            if start_val is not None:
+                date_key = str(start_val.date())
+            elif end_val is not None:
+                date_key = str(end_val.date())
+            else:
+                date_key = None
+
+            if date_key is not None:
+                date_counts[date_key] = date_counts.get(date_key, 0) + 1
+
+            if start_val is not None and end_val is not None:
+                delta = end_val - start_val
+                total_duration_secs += delta.total_seconds()
+                duration_count += 1
+
+        avg_duration = (
+            total_duration_secs / duration_count if duration_count > 0 else 0.0
+        )
+
+        dates = sorted(date_counts.keys())
+        counts = [date_counts[d] for d in dates]
+
+        window = tk.Toplevel(self)
+        window.title("Backup Dashboard")
+        window.geometry("900x520")
+        window.grab_set()
+
+        # Top KPIs
+        kpi_frame = ttk.Frame(window)
+        kpi_frame.pack(fill="x", padx=10, pady=10)
+
+        ttk.Label(kpi_frame, text=f"Total runs: {total_runs}").pack(side="left", padx=10)
+        ttk.Label(kpi_frame, text=f"Success: {success_count}").pack(side="left", padx=10)
+        ttk.Label(kpi_frame, text=f"Failure: {failure_count}").pack(side="left", padx=10)
+        ttk.Label(kpi_frame, text=f"Avg duration: {avg_duration:.1f}s").pack(side="left", padx=10)
+
+        # If we have no dated info, show a simple message
+        if not dates:
+            ttk.Label(
+                window,
+                text="No dated backup runs to display charts yet.",
+            ).pack(padx=10, pady=10)
+            return
+
+        # Matplotlib figure with two charts
+        fig = Figure(figsize=(8, 4), dpi=100)
+        ax1 = fig.add_subplot(1, 2, 1)
+        ax2 = fig.add_subplot(1, 2, 2)
+
+        # Bar chart: backups per day
+        ax1.bar(dates, counts)
+        ax1.set_title("Backups per day")
+        ax1.set_xlabel("Date")
+        ax1.set_ylabel("Number of backups")
+        ax1.tick_params(axis="x", rotation=45)
+
+        # Pie chart: success vs failure
+        if success_count + failure_count > 0:
+            ax2.pie(
+                [success_count, failure_count],
+                labels=["Success", "Failure"],
+                autopct="%d",
+            )
+            ax2.set_title("Backup status")
+        else:
+            ax2.text(
+                0.5,
+                0.5,
+                "No runs",
+                ha="center",
+                va="center",
+                fontsize=12,
+            )
+
+        canvas = FigureCanvasTkAgg(fig, master=window)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill="both", expand=True, padx=10, pady=10)
 
 
     # ------------------------------------------------------------

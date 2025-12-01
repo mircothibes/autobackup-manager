@@ -1,3 +1,4 @@
+# pyright: reportGeneralTypeIssues=false, reportArgumentType=false
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
