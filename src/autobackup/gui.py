@@ -1,6 +1,10 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-from typing import Optional, Any, cast
+from typing import Optional, Any
+
+import os
+import sys
+import subprocess
 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -62,6 +66,10 @@ class AutoBackupApp(tk.Tk):
         ttk.Button(btn_frame, text="Dashboard", command=self.open_dashboard_window).pack(
             side="left",
             padx=5,
+        )
+        ttk.Button(btn_frame, text="Open Folder", command=self.open_destination_folder).pack(
+            side="left", 
+            padx=5
         )
         ttk.Button(btn_frame, text="Run Now", command=self.run_selected_job).pack(
             side="left",
@@ -293,7 +301,7 @@ class AutoBackupApp(tk.Tk):
         duration_count = 0
 
         for run in runs:
-            run_any: Any = run  # evita problemas de typing com SQLAlchemy
+            run_any: Any = run  
 
             status_val = str(getattr(run_any, "status", "") or "")
             if status_val == "success":
@@ -414,6 +422,122 @@ class AutoBackupApp(tk.Tk):
                 ) 
         finally:
             db.close()
+    
+    # ------------------------------------------------------------
+    # Open destination Folder
+    # ------------------------------------------------------------
+    def open_destination_folder(self) -> None:
+        """Open a viewer window for the destination folder of the selected job."""
+
+        job_id = self.get_selected_job_id()
+        if job_id is None:
+            return
+
+        db = SessionLocal()
+        try:
+            job = db.query(BackupJob).filter_by(id=job_id).first()
+            if job is None:
+                messagebox.showerror("Error", "Selected job does not exist anymore.")
+                return
+
+            destination = str(job.destination_path or "").strip()
+        finally:
+            db.close()
+
+        if not destination:
+            messagebox.showwarning(
+                "No destination",
+                "This job does not have a destination path configured.",
+            )
+            return
+
+        if not os.path.isdir(destination):
+            messagebox.showerror(
+                "Folder not found",
+                f"Destination path does not exist:\n{destination}",
+            )
+            return
+
+        self._show_destination_viewer(destination)
+
+    def _show_destination_viewer(self, destination: str) -> None:
+        """Show a simple folder viewer window for the given destination path."""
+        window = tk.Toplevel(self)
+        window.title(f"Destination folder")
+        window.geometry("600x400")
+        window.grab_set()
+
+        # Path label
+        path_label = ttk.Label(window, text=destination)
+        path_label.pack(fill="x", padx=10, pady=(10, 5))
+
+        # List of files / folders
+        list_frame = ttk.Frame(window)
+        list_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+        listbox = tk.Listbox(list_frame)
+        listbox.pack(side="left", fill="both", expand=True)
+
+        scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=listbox.yview)
+        scrollbar.pack(side="right", fill="y")
+        listbox.configure(yscrollcommand=scrollbar.set)
+
+        try:
+            entries = sorted(os.listdir(destination))
+        except Exception as exc:  # noqa: BLE001
+            messagebox.showerror("Error", f"Could not list folder contents:\n{exc}")
+            window.destroy()
+            return
+
+        if not entries:
+            listbox.insert("end", "<empty folder>")
+        else:
+            for name in entries:
+                listbox.insert("end", name)
+
+        # Buttons at the bottom
+        btn_frame = ttk.Frame(window)
+        btn_frame.pack(fill="x", padx=10, pady=(5, 10))
+
+        open_btn = ttk.Button(
+            btn_frame,
+            text="Open in system file manager",
+            command=lambda: self._open_in_system_file_manager(destination),
+        )
+        open_btn.pack(side="left")
+
+        close_btn = ttk.Button(btn_frame, text="Close", command=window.destroy)
+        close_btn.pack(side="right")
+
+    def _open_in_system_file_manager(self, destination: str) -> None:
+        """Try to open destination in the OS file manager (if available)."""
+        try:
+            if sys.platform.startswith("linux"):
+                subprocess.Popen(
+                    ["xdg-open", destination],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            elif sys.platform == "win32":
+                os.startfile(destination)  # type: ignore[attr-defined]
+            elif sys.platform == "darwin":
+                subprocess.Popen(
+                    ["open", destination],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            else:
+                messagebox.showinfo(
+                    "Destination folder",
+                    f"Destination path:\n{destination}",
+                )
+        except Exception as exc:  # noqa: BLE001
+            messagebox.showinfo(
+                "Destination folder",
+                f"Could not open system file manager.\n\nPath:\n{destination}\n\nError:\n{exc}",
+            )
+    
+  
 
     # ------------------------------------------------------------
     # Add / Edit Job (Shared Window)
