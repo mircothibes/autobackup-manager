@@ -185,29 +185,21 @@ class AutoBackupApp(tk.Tk):
     # History Window
     # ------------------------------------------------------------
     def open_history_window(self) -> None:
-        job_id = self.get_selected_job_id()
-        if job_id is None:
-            return
-
+        """Open a window showing the history of backup runs."""
         db = SessionLocal()
         try:
-            job = db.query(BackupJob).filter_by(id=job_id).first()
-            if job is None:
-                messagebox.showerror("Error", "Job no longer exists.")
-                return
-
             runs = (
                 db.query(BackupRun)
-                .filter_by(job_id=job_id)
                 .order_by(BackupRun.start_time.desc())
+                .limit(200)
                 .all()
             )
         finally:
             db.close()
 
         window = tk.Toplevel(self)
-        window.title(f"History - {job.name}")
-        window.geometry("800x400")
+        window.title("Backup history")
+        window.geometry("900x400")
         window.grab_set()
 
         frame = ttk.Frame(window)
@@ -215,11 +207,11 @@ class AutoBackupApp(tk.Tk):
 
         columns = (
             "id",
-            "start",
-            "end",
+            "job_id",
             "status",
+            "start_time",
+            "end_time",
             "message",
-            "output_file",
         )
 
         tree = ttk.Treeview(
@@ -228,52 +220,150 @@ class AutoBackupApp(tk.Tk):
             show="headings",
             height=15,
         )
-
-        tree.heading("id", text="ID")
-        tree.heading("start", text="Start time")
-        tree.heading("end", text="End time")
+        tree.heading("id", text="Run ID")
+        tree.heading("job_id", text="Job ID")
         tree.heading("status", text="Status")
-        tree.heading("message", text="Message")
-        tree.heading("output_file", text="Output file")
+        tree.heading("start_time", text="Start time")
+        tree.heading("end_time", text="End time")
+        tree.heading("message", text="Message (preview)")
 
-        tree.column("id", width=40, anchor="center")
-        tree.column("start", width=150, anchor="w")
-        tree.column("end", width=150, anchor="w")
+        tree.column("id", width=60, anchor="center")
+        tree.column("job_id", width=60, anchor="center")
         tree.column("status", width=80, anchor="center")
-        tree.column("message", width=250, anchor="w")
-        tree.column("output_file", width=250, anchor="w")
+        tree.column("start_time", width=160, anchor="center")
+        tree.column("end_time", width=160, anchor="center")
+        tree.column("message", width=320, anchor="w")
 
-        tree.pack(fill="both", expand=True, side="left")
+        vsb = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+        vsb.pack(side="right", fill="y")
+        tree.configure(yscrollcommand=vsb.set)
+        tree.pack(side="left", fill="both", expand=True)
 
-        scrollbar = ttk.Scrollbar(
-            frame,
-            orient="vertical",
-            command=tree.yview,
-        )
-        scrollbar.pack(side="right", fill="y")
-        tree.configure(yscrollcommand=scrollbar.set)
-        
         for run in runs:
-            run_any: Any = run
-
-            message_text = str(getattr(run_any, "message", "") or "")[:80]
-            start_val = getattr(run_any, "start_time", None)
-            end_val = getattr(run_any, "end_time", None)
-            status_val = getattr(run_any, "status", "")
-            output_val = getattr(run_any, "output_file", "")
-
+            msg_preview = (run.message or "")[:80]
             tree.insert(
                 "",
                 "end",
                 values=(
-                    run_any.id,
-                    str(start_val) if start_val is not None else "",
-                    str(end_val) if end_val is not None else "",
-                    str(status_val) if status_val else "",
-                    message_text,
-                    str(output_val) if output_val else "",
+                    run.id,
+                    run.job_id,
+                    run.status or "",
+                    str(run.start_time) if run.start_time else "",
+                    str(run.end_time) if run.end_time else "",
+                    msg_preview,
                 ),
             )
+
+        # Buttons at the bottom
+        button_frame = ttk.Frame(window)
+        button_frame.pack(fill="x", padx=10, pady=(5, 10))
+
+        def view_selected_details() -> None:
+            selection = tree.selection()
+            if not selection:
+                messagebox.showwarning(
+                    "No run selected",
+                    "Please select a backup run first.",
+                )
+                return
+
+            item_id = selection[0]
+            values = tree.item(item_id, "values")
+            run_id_str = values[0]
+
+            try:
+                run_id = int(run_id_str)
+            except ValueError:
+                messagebox.showerror(
+                    "Error",
+                    f"Invalid run ID: {run_id_str}",
+                )
+                return
+
+            self._open_run_details(run_id)
+
+        details_button = ttk.Button(
+            button_frame,
+            text="View details",
+            command=view_selected_details,
+        )
+        details_button.pack(side="left")
+
+        close_button = ttk.Button(button_frame, text="Close", command=window.destroy)
+        close_button.pack(side="right")
+            
+
+    # ------------------------------------------------------------
+    # Open Dashboard Window
+    # ------------------------------------------------------------
+    def _open_run_details(self, run_id: int) -> None:
+        """Open a detailed view for a specific backup run."""
+        db = SessionLocal()
+        try:
+            run = db.query(BackupRun).filter_by(id=run_id).first()
+            if run is None:
+                messagebox.showerror(
+                    "Error",
+                    f"Backup run with ID {run_id} was not found.",
+                )
+                return
+
+            job = db.query(BackupJob).filter_by(id=run.job_id).first()
+        finally:
+            db.close()
+
+        window = tk.Toplevel(self)
+        window.title(f"Run details #{run_id}")
+        window.geometry("700x400")
+        window.grab_set()
+
+        info_frame = ttk.Frame(window)
+        info_frame.pack(fill="x", padx=10, pady=10)
+
+        def add_row(label: str, value: str) -> None:
+            row = ttk.Frame(info_frame)
+            row.pack(fill="x", pady=2)
+            ttk.Label(row, text=f"{label}:", width=15, anchor="w").pack(side="left")
+            ttk.Label(row, text=value, anchor="w").pack(side="left")
+
+        add_row("Run ID", str(run.id))
+        add_row("Job ID", str(run.job_id))
+        add_row("Job name", job.name if job else "<unknown>")
+        add_row("Status", run.status or "")
+        add_row(
+            "Start time",
+            str(run.start_time) if run.start_time is not None else "",
+        )
+        add_row(
+            "End time",
+            str(run.end_time) if run.end_time is not None else "",
+        )
+        add_row("Output file", run.output_file or "")
+
+        # Message / log area
+        msg_label = ttk.Label(window, text="Message / log:")
+        msg_label.pack(anchor="w", padx=10, pady=(5, 0))
+
+        text_frame = ttk.Frame(window)
+        text_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+
+        text_widget = tk.Text(text_frame, wrap="word", height=10)
+        text_widget.pack(side="left", fill="both", expand=True)
+
+        scroll = ttk.Scrollbar(text_frame, orient="vertical", command=text_widget.yview)
+        scroll.pack(side="right", fill="y")
+        text_widget.configure(yscrollcommand=scroll.set)
+
+        message_text = run.message or ""
+        text_widget.insert("1.0", message_text)
+        text_widget.configure(state="disabled")
+
+        button_frame = ttk.Frame(window)
+        button_frame.pack(fill="x", padx=10, pady=(0, 10))
+
+        close_button = ttk.Button(button_frame, text="Close", command=window.destroy)
+        close_button.pack(side="right")
+
 
     # ------------------------------------------------------------
     # Open Dashboard Window
