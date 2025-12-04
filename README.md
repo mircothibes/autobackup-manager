@@ -79,3 +79,66 @@ cd autobackup-manager
 ``` 
 
 ---
+
+## Create and activate a virtual environment
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Linux / macOS
+.venv\Scripts\activate     # Windows
+```
+
+---
+
+## Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+## Start PostgreSQL via Docker
+```bash
+docker compose up -d db
+```
+
+# Run the application
+```bash
+python -m autobackup.main
+```
+
+---
+
+## File Structure
+```bash
+autobackup-manager/
+│
+├── src/
+│   └── autobackup/
+│       ├── gui.py
+│       ├── main.py
+│       ├── db.py
+│       ├── models.py
+│       ├── scheduler.py
+│       ├── backup_engine.py
+│       ├── config.py
+│
+├── requirements.txt
+├── docker-compose.yml
+├── pyproject.toml
+└── README.md
+```
+
+---
+
+## 🧪 Type Checking (Pyright)
+
+Run:
+```bash
+npx pyright
+```
+
+Result after improvements:
+
+- 0 errors, 0 warnings, 0 informations
+
+---
+
+
