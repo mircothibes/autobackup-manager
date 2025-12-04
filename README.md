@@ -137,4 +137,39 @@ Result after improvements:
 
 ---
 
+## 📝 Roadmap
+Implemented ✔️
 
+- GUI CRUD for backup jobs
+- Manual job execution
+- History + details viewer
+- Dashboard with charts
+- Internal folder viewer
+- Path validation & error handling
+- Pyright-clean codebase
+
+Coming soon 🚧
+
+- Automatic scheduler (run jobs in background)
+- System tray integration
+- Email notifications
+- Export logs to CSV
+- Windows installer (.exe)
+
+---
+
+## 🤝 Contributing
+
+Pull requests are welcome!
+For major changes, please open an issue to discuss what you'd like to change.
+
+---
+
+## 📜 License
+
+MIT License — feel free to use this project for learning or production.
+
+---
+
+## 🧑‍💻 Author
+Marcos Vinicius Thibes Kemer
