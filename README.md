@@ -72,34 +72,30 @@ The goal of this project is to provide a clean, GUI-based backup automation tool
 
 ## 📦 Installation
 
-### 1. Clone the repository
+1. Clone the repository
 ```bash
 git clone https://github.com/your-user/autobackup-manager.git
 cd autobackup-manager
 ``` 
 
----
-
-## Create and activate a virtual environment
+2. Create and activate a virtual environment
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Linux / macOS
 .venv\Scripts\activate     # Windows
 ```
 
----
-
-## Install dependencies
+3. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-## Start PostgreSQL via Docker
+4. Start PostgreSQL via Docker
 ```bash
 docker compose up -d db
 ```
 
-# Run the application
+5. Run the application
 ```bash
 python -m autobackup.main
 ```
