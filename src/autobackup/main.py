@@ -1,64 +1,47 @@
-"""
-from sqlalchemy.orm import Session
-from autobackup.db import Base, engine, SessionLocal
-from autobackup.models import BackupJob
-from autobackup.backup_engine import run_backup_for_job
+from __future__ import annotations
 
+import logging
+import traceback
 
-def init_db() -> None:
-    Base.metadata.create_all(bind=engine)
-
-
-def create_sample_job(db: Session) -> BackupJob:
-    job = BackupJob(
-        name="Test job",
-        source_path="/tmp/source_test",
-        destination_path="/tmp/backups_test",
-        schedule_type="manual",
-        active=True,
-    )
-    db.add(job)
-    db.commit()
-    db.refresh(job)
-    return job
-
-
-def main() -> None:
-    init_db()
-
-    db = SessionLocal()
-    try:
-        job = create_sample_job(db)
-        run = run_backup_for_job(db, job)
-        print("Backup run status:", run.status)
-        print("Message:", run.message)
-        print("Output file:", run.output_file)
-    finally:
-        db.close()
-
-
-if __name__ == "__main__":
-    main()
-"""
 from autobackup.db import Base, engine
 from autobackup.scheduler import BackupScheduler
 from autobackup.gui import run_app
 
 
+def configure_logging() -> None:
+    """Configure basic logging for the whole application."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+
+
 def main() -> None:
-    # Create table
+    """Application entry point: init DB, start scheduler, launch GUI."""
+    configure_logging()
+
+    logging.info("Creating database tables if not exist...")
     Base.metadata.create_all(bind=engine)
 
-    # start scheduler
     scheduler = BackupScheduler()
-    scheduler.reload()
 
-    # start gui
-    run_app(scheduler)
+    logging.info("Starting BackupScheduler...")
+    scheduler.start()
+    logging.info("BackupScheduler started (non-blocking).")
+
+    try:
+        logging.info("Starting AutoBackup GUI...")
+        run_app(scheduler)  
+        logging.info("GUI closed.")
+    except Exception as exc:
+        logging.exception("Error while running GUI: %s", exc)
+        print("\nERROR while running GUI:", exc)
+        traceback.print_exc()
+    finally:
+        logging.info("Shutting down scheduler...")
+        scheduler.stop()
+        logging.info("Scheduler stopped.")
 
 
 if __name__ == "__main__":
     main()
-
-
-
