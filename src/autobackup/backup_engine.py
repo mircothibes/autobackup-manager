@@ -1,6 +1,7 @@
 # pyright: reportArgumentType=false, reportAttributeAccessIssue=false
 import os
 import zipfile
+import pytz
 from typing import Tuple
 from datetime import datetime
 from pathlib import Path
@@ -60,7 +61,7 @@ def run_backup_for_job(db: Session, job: BackupJob) -> BackupRun:
     run = BackupRun(
         job_id=job.id,
         status="running",
-        start_time=datetime.utcnow(),
+        start_time=datetime.now(),
     )
     db.add(run)
     db.commit()
@@ -73,8 +74,8 @@ def run_backup_for_job(db: Session, job: BackupJob) -> BackupRun:
         destination_path=job.destination_path,
         output_file=output_file_path,
     )
-
-    run.end_time = datetime.utcnow()
+    LOCAL_TZ = pytz.timezone("Europe/Luxembourg")
+    run.end_time = datetime.now(LOCAL_TZ)
     run.message = message
 
     if success:
