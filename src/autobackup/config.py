@@ -15,6 +15,8 @@ class Settings:
     db_name: str = os.getenv("DB_NAME", "autobackup_db")
     db_user: str = os.getenv("DB_USER", "autobackup")
     db_password: str = os.getenv("DB_PASSWORD", "autobackup")
+    
+    max_backups_per_job: int = int(os.getenv("MAX_BACKUPS_PER_JOB", "20"))
 
     @property
     def database_url(self) -> str:
