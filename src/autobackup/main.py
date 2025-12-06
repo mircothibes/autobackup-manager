@@ -31,15 +31,18 @@ def main() -> None:
 
     try:
         logging.info("Starting AutoBackup GUI...")
-        run_app(scheduler)  
+        run_app(scheduler)
         logging.info("GUI closed.")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logging.exception("Error while running GUI: %s", exc)
         print("\nERROR while running GUI:", exc)
         traceback.print_exc()
     finally:
         logging.info("Shutting down scheduler...")
-        scheduler.stop()
+        try:
+            scheduler.stop()
+        except Exception as exc:  # noqa: BLE001
+            logging.warning("Error while stopping scheduler: %s", exc)
         logging.info("Scheduler stopped.")
 
 
