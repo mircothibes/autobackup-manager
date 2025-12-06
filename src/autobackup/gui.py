@@ -68,8 +68,8 @@ class AutoBackupApp(tk.Tk):
             padx=5,
         )
         ttk.Button(btn_frame, text="Open Folder", command=self.open_destination_folder).pack(
-            side="left", 
-            padx=5
+            side="left",
+            padx=5,
         )
         ttk.Button(btn_frame, text="Run Now", command=self.run_selected_job).pack(
             side="left",
@@ -291,10 +291,9 @@ class AutoBackupApp(tk.Tk):
 
         close_button = ttk.Button(button_frame, text="Close", command=window.destroy)
         close_button.pack(side="right")
-            
 
     # ------------------------------------------------------------
-    # Open Dashboard Window
+    # Run details window
     # ------------------------------------------------------------
     def _open_run_details(self, run_id: int) -> None:
         """Open a detailed view for a specific backup run."""
@@ -364,9 +363,8 @@ class AutoBackupApp(tk.Tk):
         close_button = ttk.Button(button_frame, text="Close", command=window.destroy)
         close_button.pack(side="right")
 
-
     # ------------------------------------------------------------
-    # Open Dashboard Window
+    # Dashboard Window
     # ------------------------------------------------------------
     def open_dashboard_window(self) -> None:
         db = SessionLocal()
@@ -391,7 +389,7 @@ class AutoBackupApp(tk.Tk):
         duration_count = 0
 
         for run in runs:
-            run_any: Any = run  
+            run_any: Any = run
 
             status_val = str(getattr(run_any, "status", "") or "")
             if status_val == "success":
@@ -480,7 +478,6 @@ class AutoBackupApp(tk.Tk):
         canvas.draw()
         canvas.get_tk_widget().pack(fill="both", expand=True, padx=10, pady=10)
 
-
     # ------------------------------------------------------------
     # Run Job
     # ------------------------------------------------------------
@@ -509,10 +506,10 @@ class AutoBackupApp(tk.Tk):
                 messagebox.showerror(
                     "Backup failed",
                     message or "Backup failed with unknown error.",
-                ) 
+                )
         finally:
             db.close()
-    
+
     # ------------------------------------------------------------
     # Open destination Folder
     # ------------------------------------------------------------
@@ -626,8 +623,6 @@ class AutoBackupApp(tk.Tk):
                 "Destination folder",
                 f"Could not open system file manager.\n\nPath:\n{destination}\n\nError:\n{exc}",
             )
-    
-  
 
     # ------------------------------------------------------------
     # Add / Edit Job (Shared Window)
@@ -668,8 +663,9 @@ class AutoBackupApp(tk.Tk):
             value=str(job.schedule_type) if is_edit else "manual",
         )
         interval_var = tk.StringVar(
-            value=str(job.interval_minutes) 
-            if is_edit and job.interval_minutes is not None else "",
+            value=str(job.interval_minutes)
+            if is_edit and job.interval_minutes is not None
+            else "",
         )
         active_var = tk.BooleanVar(value=bool(job.active) if is_edit else True)
 
@@ -704,12 +700,23 @@ class AutoBackupApp(tk.Tk):
         schedule_box.grid(row=3, column=1, sticky="w", pady=5)
 
         ttk.Label(form, text="Interval (min):").grid(row=4, column=0, sticky="w")
-        ttk.Entry(form, textvariable=interval_var, width=10).grid(
+        interval_entry = ttk.Entry(form, textvariable=interval_var, width=10)
+        interval_entry.grid(
             row=4,
             column=1,
             sticky="w",
             pady=5,
         )
+
+        def update_interval_state(*args: Any) -> None:
+            schedule = schedule_var.get()
+            if schedule == "interval":
+                interval_entry.configure(state="normal")
+            else:
+                interval_entry.configure(state="disabled")
+
+        schedule_var.trace_add("write", update_interval_state)
+        update_interval_state()
 
         ttk.Checkbutton(form, text="Active", variable=active_var).grid(
             row=5,
@@ -764,8 +771,9 @@ class AutoBackupApp(tk.Tk):
                     job_db_any.source_path = src
                     job_db_any.destination_path = dst
                     job_db_any.schedule_type = schedule
-                    job_db_any.interval_minutes = ( 
-                        int(interval_value) if interval_value is not None else None)
+                    job_db_any.interval_minutes = (
+                        int(interval_value) if interval_value is not None else None
+                    )
                     job_db_any.active = bool(active_var.get())
                 else:
                     job_db_any = BackupJob(
