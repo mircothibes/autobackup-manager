@@ -137,6 +137,67 @@ Result after improvements:
 
 ---
 
+## 🧱 Building the Windows executable (PyInstaller)
+
+The project can be packaged as a standalone **Windows executable (.exe)** using PyInstaller.
+
+> Requirements:
+> - Python 3.12+ installed on Windows (`py` launcher available)
+> - PostgreSQL running and accessible with the same credentials as in `.env`
+
+1.Clone or copy the project to Windows
+
+Example path:
+
+```text
+C:\Users\mirco\dev\autobackup-manager
+```
+- Make sure the following files exist in the project root:
+- pyproject.toml
+- requirements.txt
+- .env
+- src\autobackup\main.py (application entry point)
+
+2. Create and activate a virtual environment
+```
+cd C:\Users\mirco\dev\autobackup-manager
+
+py -m venv .venv
+.\.venv\Scripts\activate
+```
+
+3. Install dependencies
+```
+pip install -r requirements.txt
+pip install pyinstaller
+```
+
+4. Build the executable with PyInstaller
+```
+pyinstaller --name AutoBackupManager --onefile --windowed src\autobackup\main.py
+```
+This will generate the following structure:
+```
+dist\
+  AutoBackupManager.exe   # Windows executable
+build\
+  ...                     # PyInstaller build artifacts (can be ignored)
+```
+
+5. Running the executable
+From the project root:
+```
+cd C:\Users\mirco\dev\autobackup-manager
+.\dist\AutoBackupManager.exe
+```
+The application will:
+- Read configuration from .env (database, environment, etc.)
+- Connect to PostgreSQL
+- Start the background scheduler
+- Open the Tkinter GUI (AutoBackup Manager)
+
+---
+
 ## 📝 Roadmap
 Implemented ✔️
 
