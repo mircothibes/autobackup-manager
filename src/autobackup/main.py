@@ -10,18 +10,17 @@ from autobackup.gui import run_app
 
 
 def configure_logging() -> None:
-    """Configure logging to console and to a file in the project root."""
+    """Configure logging for the whole application (console + file)."""
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
 
-    # Evita duplicar handlers se configure_logging for chamado mais de uma vez
+    # Avoid adding handlers twice if configure_logging() is called again
     if root_logger.handlers:
         return
 
-    # Descobrir diretório raiz do projeto (…/autobackup-manager)
-    # main.py está em src/autobackup/main.py  -> sobe 3 níveis
-    root_dir = Path(__file__).resolve().parents[2]
-    log_dir = root_dir / "logs"
+    # main.py -> src/autobackup/main.py  -> go up 3 levels to project root
+    project_root = Path(__file__).resolve().parents[2]
+    log_dir = project_root / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / "autobackup.log"
 
@@ -29,12 +28,12 @@ def configure_logging() -> None:
         "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
 
-    # Handler para console
+    # Console handler
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     root_logger.addHandler(console_handler)
 
-    # Handler para arquivo
+    # File handler
     file_handler = logging.FileHandler(log_file, encoding="utf-8")
     file_handler.setFormatter(formatter)
     root_logger.addHandler(file_handler)
