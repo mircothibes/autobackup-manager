@@ -1,46 +1,94 @@
-# 🗂️ AutoBackup Manager
+<p align="center">
+  <img src="assets/autobackup_icon.png" alt="AutoBackup Manager Icon" width="120">
+</p>
 
-AutoBackup Manager is a desktop application built with **Python**, **Tkinter**, and **PostgreSQL** that allows users to create automated backup jobs, run them manually, track execution history, visualize results on dashboards, and inspect backup folders through an integrated file explorer.
+<h1 align="center">🗂️ AutoBackup Manager</h1>
 
-The goal of this project is to provide a clean, GUI-based backup automation tool designed for learning purposes and real-world usage.
+<p align="center">
+  Desktop backup manager built with <b>Python</b>, <b>Tkinter</b> and <b>PostgreSQL</b>, 
+  with scheduled jobs, history, analytics dashboard and an integrated folder viewer.
+</p>
+
+---
+
+## 📸 Screenshots
+
+### Main window – Backup jobs
+
+<p align="center">
+  <img src="assets/screenshot_jobs.png" alt="AutoBackup Manager - Jobs" width="900">
+</p>
+
+### Dashboard – Backups overview
+
+<p align="center">
+  <img src="assets/screenshot_dashboard.png" alt="AutoBackup Manager - Dashboard" width="900">
+</p>
+
+### History & Run details
+
+<p align="center">
+  <img src="assets/screenshot_history.png" alt="AutoBackup Manager - History and Run Details" width="900">
+</p>
+
+---
+
+## 🚀 Overview
+
+**AutoBackup Manager** is a desktop application that lets you:
+
+- Create backup jobs for any folder on your system  
+- Run jobs manually or on a schedule  
+- Inspect execution history and detailed logs  
+- Visualize backups over time with charts  
+- Open backup destinations through an integrated folder viewer  
+
+The goal of this project is to be both a **learning tool** and a **practical desktop backup utility**.
 
 ---
 
 ## 🚀 Features
 
 ### ✅ Backup Jobs
-- Create, edit, delete backup jobs  
-- Define:
-  - source folder  
-  - destination folder  
-  - schedule type  
-  - interval (minutes)  
-  - job activation (enable/disable)
+- Create, edit and delete backup jobs
+- Configure:
+  - **Source folder**
+  - **Destination folder**
+  - **Schedule type**: `manual`, `interval`, `daily`
+  - **Interval (minutes)** for interval-based jobs
+  - **Active** flag (enable/disable without deleting)
+- Jobs are stored in PostgreSQL using SQLAlchemy ORM
 
 ### ✅ Manual Backup Execution
-- Run any job immediately
-- Validation of paths (missing folders, permissions)
-- ZIP archive creation with timestamp naming
-- Detailed logging for success and error cases
+- Run any job immediately with **Run Now**
+- Validation of:
+  - Missing source/destination folders
+  - Non-directory paths
+- Backups are created as **ZIP archives** with timestamped filenames:
+  - `job_<id>_YYYYMMDD_HHMMSS.zip`
+- Clear success/error messages in the UI
 
 ### ✅ Backup History
-- Shows all past executions:
-  - run ID  
-  - job ID  
-  - status (success / error)  
-  - start time  
-  - end time  
-  - message preview  
-- “View details” window with full log and output file path
+- History window showing:
+  - Run ID
+  - Job ID
+  - Status (`success` / `error`)
+  - Start and end timestamps
+  - Message preview
+- “View details” window with:
+  - Job name
+  - Output file path
+  - Full log/message text
 
 ### ✅ Dashboard / Analytics
-- Bar chart: **Backups per day**
-- Pie chart: **Success vs Failure**
-- Summary statistics:
-  - total runs  
-  - success  
-  - failure  
-  - average duration  
+- **KPIs** on top:
+  - Total runs
+  - Success count
+  - Failure count
+  - Average run duration
+- **Charts (matplotlib)**:
+  - Bar chart: *backups per day*
+  - Pie chart: *success vs failure* 
 
 ### ✅ Destination Folder Viewer
 - Internal Tkinter window to list folder contents
@@ -55,7 +103,9 @@ The goal of this project is to provide a clean, GUI-based backup automation tool
 - `scheduler.py` — scheduling system (manual mode ready, auto mode coming soon)  
 - `gui.py` — graphical interface (Tkinter)  
 - `models.py` — SQLAlchemy ORM models  
-- `db.py` — database session handling  
+- `db.py` — database session handling 
+- `config.py` — configuration from `.env`
+- `main.py` — application entry point (logging, scheduler + GUI bootstrap)
 
 ---
 
