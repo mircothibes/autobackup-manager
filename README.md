@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/autobackup_icon.png" alt="AutoBackup Manager Icon" width="120">
+  <img src="./assets/autobackup_icon.png" alt="AutoBackup Manager Icon" width="120">
 </p>
 
 <h1 align="center">🗂️ AutoBackup Manager</h1>
@@ -16,19 +16,19 @@
 ### Main window – Backup jobs
 
 <p align="center">
-  <img src="assets/screenshot_jobs.png" alt="AutoBackup Manager - Jobs" width="900">
+  <img src="./assets/screenshot_jobs.png" alt="AutoBackup Manager - Jobs" width="900">
 </p>
 
 ### Dashboard – Backups overview
 
 <p align="center">
-  <img src="assets/screenshot_dashboard.png" alt="AutoBackup Manager - Dashboard" width="900">
+  <img src="./assets/screenshot_dashboard.png" alt="AutoBackup Manager - Dashboard" width="900">
 </p>
 
 ### History & Run details
 
 <p align="center">
-  <img src="assets/screenshot_history.png" alt="AutoBackup Manager - History and Run Details" width="900">
+  <img src="./assets/screenshot_history.png" alt="AutoBackup Manager - History and Run Details" width="900">
 </p>
 
 ---
