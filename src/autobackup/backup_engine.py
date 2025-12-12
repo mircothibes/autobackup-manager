@@ -1,8 +1,8 @@
 # pyright: reportArgumentType=false, reportAttributeAccessIssue=false
-import logging
 import os
 import zipfile
 import pytz
+import logging
 from typing import Tuple
 from datetime import datetime
 from pathlib import Path
@@ -65,45 +65,55 @@ def create_zip_backup(
         return False, f"Error while creating backup: {exc}"
 
 
-def cleanup_old_backups(job: BackupJob, max_backups: int) -> None:
+def _enforce_retention_for_job(db: Session, job_id: int) -> None:
     """
-    Keep only the newest `max_backups` backup files for this job
-    and delete older ones from the destination folder.
+    Enforce retention policy for a given job:
+    keep only the N most recent successful backups and delete older ones.
     """
-    dest_dir = Path(job.destination_path)
-
-    if not dest_dir.exists() or not dest_dir.is_dir():
-        logger.info(
-            "Destination directory does not exist or is not a directory for job %s: %s",
-            job.id,
-            dest_dir,
-        )
+    max_runs = settings.max_backups_per_job
+    if max_runs <= 0:
         return
 
-    pattern = f"job_{job.id}_*.zip"
-    files = list(dest_dir.glob(pattern))
+    runs = (
+        db.query(BackupRun)
+        .filter(BackupRun.job_id == job_id, BackupRun.status == "success")
+        .order_by(BackupRun.start_time.desc())
+        .all()
+    )
 
-    if len(files) <= max_backups:
+    if len(runs) <= max_runs:
         return
 
-    # Newest first
-    files_sorted = sorted(files, key=lambda p: p.stat().st_mtime, reverse=True)
+    to_delete = runs[max_runs:]
 
-    # Delete everything after the N newest
-    for old_file in files_sorted[max_backups:]:
+    for run in to_delete:
         try:
-            old_file.unlink()
-            logger.info(
-                "Deleted old backup file for job %s: %s",
-                job.id,
-                old_file,
-            )
+            if run.output_file:
+                path = Path(run.output_file)
+                if path.exists():
+                    path.unlink()
+                    logger.info(
+                        "Retention: deleted old backup file %s for job %s",
+                        path,
+                        job_id,
+                    )
         except Exception as exc:  # noqa: BLE001
             logger.warning(
-                "Could not delete old backup file %s: %s",
-                old_file,
+                "Retention: could not delete file %s for job %s: %s",
+                run.output_file,
+                job_id,
                 exc,
             )
+
+        db.delete(run)
+
+    db.commit()
+    logger.info(
+        "Retention: kept last %s backups for job %s (deleted %s old runs)",
+        max_runs,
+        job_id,
+        len(to_delete),
+    )
 
 
 def run_backup_for_job(db: Session, job: BackupJob) -> BackupRun:
@@ -126,6 +136,7 @@ def run_backup_for_job(db: Session, job: BackupJob) -> BackupRun:
         destination_path=job.destination_path,
         output_file=output_file_path,
     )
+
     LOCAL_TZ = pytz.timezone("Europe/Luxembourg")
     run.end_time = datetime.now(LOCAL_TZ)
     run.message = message
@@ -133,9 +144,6 @@ def run_backup_for_job(db: Session, job: BackupJob) -> BackupRun:
     if success:
         run.status = "success"
         run.output_file = str(output_file_path)
-
-        # Apply retention policy for this job
-        cleanup_old_backups(job, settings.max_backups_per_job)
     else:
         run.status = "error"
         run.output_file = None
@@ -144,4 +152,9 @@ def run_backup_for_job(db: Session, job: BackupJob) -> BackupRun:
     db.commit()
     db.refresh(run)
 
+    # Só aplica retenção se o backup deu certo
+    if success:
+        _enforce_retention_for_job(db, job.id)
+
     return run
+
