@@ -156,19 +156,28 @@ python -m autobackup.main
 ```bash
 autobackup-manager/
 │
+├── assets/
+│   ├── autobackup_icon.png
+│   ├── screenshot_jobs.png
+│   ├── screenshot_dashboard.png
+│   └── screenshot_history.png
+│
 ├── src/
 │   └── autobackup/
-│       ├── gui.py
-│       ├── main.py
-│       ├── db.py
-│       ├── models.py
-│       ├── scheduler.py
+│       ├── __init__.py
 │       ├── backup_engine.py
 │       ├── config.py
+│       ├── db.py
+│       ├── gui.py
+│       ├── main.py
+│       ├── models.py
+│       └── scheduler.py
 │
-├── requirements.txt
+├── AutoBackupManager.spec
 ├── docker-compose.yml
 ├── pyproject.toml
+├── requirements.txt
+├── requirements-dev.txt
 └── README.md
 ```
 
@@ -246,26 +255,30 @@ The application will:
 - Start the background scheduler
 - Open the Tkinter GUI (AutoBackup Manager)
 
+You can then create jobs, run backups, inspect history and open destination folders.
+
 ---
 
 ## 📝 Roadmap
-Implemented ✔️
-
+Implemented ✅
 - GUI CRUD for backup jobs
 - Manual job execution
 - History + details viewer
 - Dashboard with charts
 - Internal folder viewer
 - Path validation & error handling
+- Logging and structured startup flow
+- PyInstaller build for Windows
 - Pyright-clean codebase
 
-Coming soon 🚧
+Planned 🚧
 
-- Automatic scheduler (run jobs in background)
+- More flexible schedules (daily/weekly/hourly with UI controls)
 - System tray integration
-- Email notifications
-- Export logs to CSV
-- Windows installer (.exe)
+- Email / desktop notifications
+- Log export (CSV/JSON)
+- Automatic cleanup of old backups (retention policy)
+- Windows installer (.msi / setup.exe)
 
 ---
 
